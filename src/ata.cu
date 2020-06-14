@@ -1,43 +1,4 @@
-#include <iostream>
-#include <cstdio>
-#include <cstdlib>
-#include <cassert>
-
-#include <cuda_runtime_api.h>
-#include <cublas_v2.h>
-#include <cuda.h>
-
-#include <cmath>
-#include "CudaTimer.h"
-
-
-cublasHandle_t handle;
-
-
-void GPU_mul(double *A, double *B, double *C,
-    int lda, int ldb, int ldc,
-    int XA, int XB, int XC,
-    int YA, int YB, int YC,
-    double alpha, double beta) {
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
-}
-
-void GPU_add(double *A, double *B, double *C,
-    int lda, int ldb, int ldc,
-    int XA, int YA,
-    double alpha, double beta) {
-  cublasDgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N, XA, YA, &alpha, A, lda, &beta, B, ldb, C, ldc);
-}
-
-void verifyByCUBLAS(double *d_A, double *d_B, double *d_C, int M, int N, int K) {
-  double one = 1.0;
-  double zero = 0.0;
-#if CMAJOR
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &one, d_A, M, d_B, K, &zero, d_C, M);
-#else
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &one, d_B, N, d_A, K, &zero, d_C, N);
-#endif
-}
+#include "strassen.cu"
 
 /*
   lda, ldb, ldc is the width in actual memory.
@@ -46,7 +7,7 @@ void verifyByCUBLAS(double *d_A, double *d_B, double *d_C, int M, int N, int K) 
   B = XB x YB
   C = XC x YC
 */
-void strassen(double *A, double *B, double *C,
+void ata(double *A, double *B, double *C,
     int lda, int ldb, int ldc,
     int XA, int XB, int XC,
     int YA, int YB, int YC,

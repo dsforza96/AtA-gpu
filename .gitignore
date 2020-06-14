@@ -1,5 +1,8 @@
-# Created by https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,c++,cuda
-# Edit at https://www.toptal.com/developers/gitignore?templates=linux,visualstudiocode,c++,cuda
+build/
+bin/
+
+# Created by https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,c++,cuda,cmake
+# Edit at https://www.toptal.com/developers/gitignore?templates=linux,visualstudiocode,c++,cuda,cmake
 
 ### C++ ###
 # Prerequisites
@@ -34,6 +37,23 @@
 *.exe
 *.out
 *.app
+
+### CMake ###
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+### CMake Patch ###
+# External projects
+*-prefix/
 
 ### CUDA ###
 *.i
@@ -70,4 +90,4 @@
 # Ignore all local history of files
 .history
 
-# End of https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,c++,cuda
+# End of https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,c++,cuda,cmake
