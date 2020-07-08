@@ -8,6 +8,14 @@ void GPU_trans(double *A, double *C,
   cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, XA, YA, &one, A, lda, &zero, A, lda, C, ldc);
 }
 
+void GPU_mul_t(double *A, double *B, double *C,
+    int lda, int ldb, int ldc,
+    int XA, int XB, int XC,
+    int YA, int YB, int YC,
+    double alpha, double beta) {
+  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
+}
+
 void GPU_ata(double *A, double *C, int M, int N) {
   double one = 1.0;
   double zero = 0.0;
@@ -37,7 +45,7 @@ void ata(double *A, double *C,
   int YC2 = YC / 2;
 
   double *W_1, *W_2;
-  double *A12_t, *A22_t;
+  double *A11_t, *A12_t, *A22_t;
   int lw1 = XA2;
   int lw2 = XA2;
   cudaMalloc((void **)&W_1, lw1 * YA2 * sizeof(double));
@@ -101,33 +109,26 @@ void ata(double *A, double *C,
   /* dynamic peeling fix-up */
   int pxa = XA % 2;
   int pya = YA % 2;
-  int pxb = XB % 2;
-  int pyb = YB % 2;
   int pxc = XC % 2;
   int pyc = YC % 2;
   
   int nxa = XA - pxa;
   int nya = YA - pya;
-  int nxb = XB - pxb;
-  int nyb = YB - pyb;
   int nxc = XC - pxc;
   int nyc = YC - pyc;
 
   double *a12, *a21;
-  double *b12, *b21;
   double *c12, *c21;
+  b12 = B + dxb;
+  b21 = B + dyb;
   int dxa = nxa;
   int dya = nya * lda;
-  int dxb = nxb;
-  int dyb = nyb * ldb;
   int dxc = nxc;
   int dyc = nyc * ldc;
   
   a12 = A + dxa;
   a21 = A + dya;
   // a22 = A + dxa + dya;
-  b12 = B + dxb;
-  b21 = B + dyb;
   // b22 = B + dxb + dyb;
   c12 = C + dxc;
   c21 = C + dyc;
@@ -139,9 +140,8 @@ void ata(double *A, double *C,
     a21 = nxa x pya
     a22 = pxa x pya
    */
-  GPU_mul(a21, B11, c21, lda, ldb, ldc, nxa,  XB,  XC, pya, nyb, pyc, 1.0, 0.0);
-  GPU_mul(A11, b12, c12, lda, ldb, ldc, nxa, pxb, pxc,  YA, nyb,  YC, 1.0, 0.0);
-  GPU_mul(a12, b21, C11, lda, ldb, ldc, pxa,  XB,  XC,  YA, pyb,  YC, 1.0, 1.0);
+  GPU_mul_t(a21, A11, c21, lda, lda, ldc, nxa,  YA,  XC, pya, nxa, pyc, 1.0, 0.0);
+  GPU_mul(a12, a21, C11, lda, ldb, ldc, pxa,  XB,  XC,  YA, pyb,  YC, 1.0, 1.0);
 }
 
 
