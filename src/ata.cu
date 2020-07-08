@@ -45,7 +45,7 @@ void ata(double *A, double *C,
   int YC2 = YC / 2;
 
   double *W_1, *W_2;
-  double *A11_t, *A12_t, *A22_t;
+  double *A12_t, *A22_t;
   int lw1 = XA2;
   int lw2 = XA2;
   cudaMalloc((void **)&W_1, lw1 * YA2 * sizeof(double));
@@ -68,7 +68,7 @@ void ata(double *A, double *C,
   A22 = A + dXA + dYA;
 
   C11 = C;
-  C12 = C + dXC;
+  // C12 = C + dXC;
   C21 = C + dYC;
   C22 = C + dXC + dYC;
 
@@ -95,9 +95,9 @@ void ata(double *A, double *C,
     ata(A12, W_1, lda, lw1, XA2, XA2, YA2, YA2, depth - 1);  // S3 = ata(A12)
     ata(A22, W_2, lda, lw2, XA2, XA2, YA2, YA2, depth - 1);  // S4 = ata(A22)
     GPU_add(W_1, W_2, C22, lw1, lw2, ldc, XA2, YA2, 1.0,  1.0);  // C22 = S3 + S4
-    GPU_trans(A12, A12_t, C22, lda, lda, XA2, YA2);  // A12_t
+    GPU_trans(A12, A12_t, lda, lda, XA2, YA2);  // A12_t
     strassen(A12_t, A11, W_1, lda, lda, lw1, YA2, XA2, XA2, XA2, YA2, YA2, depth - 1);  // S5 = strassen(A12_t, A11)
-    GPU_trans(A22, A22_t, C22, lda, lda, XA2, YA2);  // A22_t
+    GPU_trans(A22, A22_t, lda, lda, XA2, YA2);  // A22_t
     strassen(A22_t, A21, W_2, lda, lda, lw2, YA2, XA2, XA2, XA2, YA2, YA2, depth - 1);  // S6 = strassen(A22_t, A21)
     GPU_add(W_1, W_2, C21, lw1, lw2, ldc, XA2, YA2, 1.0,  1.0);  // C21 = S5 + S6
   }
@@ -119,8 +119,6 @@ void ata(double *A, double *C,
 
   double *a12, *a21;
   double *c12, *c21;
-  b12 = B + dxb;
-  b21 = B + dyb;
   int dxa = nxa;
   int dya = nya * lda;
   int dxc = nxc;
@@ -130,7 +128,7 @@ void ata(double *A, double *C,
   a21 = A + dya;
   // a22 = A + dxa + dya;
   // b22 = B + dxb + dyb;
-  c12 = C + dxc;
+  // c12 = C + dxc;
   c21 = C + dyc;
   // c22 = C + dxc + dyc;
 
@@ -140,14 +138,14 @@ void ata(double *A, double *C,
     a21 = nxa x pya
     a22 = pxa x pya
    */
-  GPU_mul_t(a21, A11, c21, lda, lda, ldc, nxa,  YA,  XC, pya, nxa, pyc, 1.0, 0.0);
-  GPU_mul(a12, a21, C11, lda, ldb, ldc, pxa,  XB,  XC,  YA, pyb,  YC, 1.0, 1.0);
+  GPU_mul_t(a21, A11, c21, lda, lda, ldc, nxa, YA, XC, pya, nxa, pyc, 1.0, 0.0);
+  GPU_mul(a12, a21, C11, lda, lda, ldc, pxa, YA,  XC, YA, pxa, YC, 1.0, 1.0);
 }
 
 
 int main (int argc, char **argv) {
   if(argc != 6) {
-    printf("Usage: strassen <M> <N> <iter> <check> <depth>\n");
+    printf("Usage: ata <M> <N> <iter> <check> <depth>\n");
     return -1;
   }
 
@@ -220,11 +218,9 @@ int main (int argc, char **argv) {
   }
 
   free(h_A);
-  free(h_B);
   free(h_C);
   free(v_C);
   cudaFree(d_A);
-  cudaFree(d_B);
   cudaFree(d_C);
 
   if (cublasDestroy(handle) != CUBLAS_STATUS_SUCCESS) {
