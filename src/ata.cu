@@ -1,5 +1,21 @@
 #include "strassen.cu"
 
+void printm(double* arr_, int m, int n) {
+  double* arr = (double *)malloc(m * n * sizeof(double));
+  cudaMemcpy(arr, arr_, m * n * sizeof(double), cudaMemcpyDeviceToHost);
+  for (int i = 0; i < m; i++)
+  {
+   for (int j = 0; j < n; j++)
+   {
+      printf("%f ", arr[i * n + j]);
+   }
+
+   // Newline for new row
+   printf("\n");
+  }
+  printf("\n");
+}
+
 void GPU_trans(double *A, double *C,
     int lda, int ldc,
     int XA, int YA) {
@@ -19,8 +35,8 @@ void GPU_mul_t(double *A, double *B, double *C,
 void GPU_ata(double *A, double *C, int M, int N) {
   double one = 1.0;
   double zero = 0.0;
-#if CMAJOR
-  cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, M, N, M, &one, A, M, A, M, &zero, C, M);
+#if 1
+  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, M, &one, A, M, A, M, &zero, C, M);
 #else
   cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, N, M, M, &one, A, N, A, M, &zero, C, N);
 #endif
@@ -30,7 +46,7 @@ void GPU_ata(double *A, double *C, int M, int N) {
   lda, ldc is the width in actual memory.
   XA is the width for computation.
   A = XA x YA
-  C = XA x XA
+  C = XC x YC
 */
 void ata(double *A, double *C,
     int lda, int ldc,
@@ -61,7 +77,7 @@ void ata(double *A, double *C,
 
   double *A11, *A12, *A21, *A22;
   double *C11, *C12, *C21, *C22;
-  
+
   A11 = A;
   A12 = A + dXA;
   A21 = A + dYA;
@@ -74,7 +90,7 @@ void ata(double *A, double *C,
 
   /* cutoff criteria */
   bool stop = false;
-  
+
 #if 0
   int cutoff = 2048;
   float mm = cutoff / XB2;
@@ -86,19 +102,22 @@ void ata(double *A, double *C,
 #endif
 
   if (depth <= 1 || stop) {
-    GPU_ata(A, C, XA, YA);
+    double* A_t;
+    cudaMalloc((void **)&A_t, YA * XA * sizeof(double));
+    GPU_trans(A, A_t, lda, YA, XA, YA);
+    strassen(A_t, A, C, YA, lda, ldc, YA, XA, XC, XA, YA, YC, 1);
   }
   else {
-    ata(A11, W_1, lda, lw1, XA2, XA2, YA2, YA2, depth - 1);  // S1 = ata(A11)
-    ata(A21, W_2, lda, lw2, XA2, XA2, YA2, YA2, depth - 1);  // S2 = ata(A21)
+    ata(A11, W_1, lda, lw1, XA2, YA2, YA2, XA2, depth - 1);  // S1 = ata(A11)
+    ata(A21, W_2, lda, lw2, XA2, XA2, YA2, XA2, depth - 1);  // S2 = ata(A21)
     GPU_add(W_1, W_2, C11, lw1, lw2, ldc, XA2, YA2, 1.0, 1.0);  // C11 = S1 + S2
-    ata(A12, W_1, lda, lw1, XA2, XA2, YA2, YA2, depth - 1);  // S3 = ata(A12)
-    ata(A22, W_2, lda, lw2, XA2, XA2, YA2, YA2, depth - 1);  // S4 = ata(A22)
+    ata(A12, W_1, lda, lw1, XA2, XA2, YA2, XA2, depth - 1);  // S3 = ata(A12)
+    ata(A22, W_2, lda, lw2, XA2, XA2, YA2, XA2, depth - 1);  // S4 = ata(A22)
     GPU_add(W_1, W_2, C22, lw1, lw2, ldc, XA2, YA2, 1.0,  1.0);  // C22 = S3 + S4
-    GPU_trans(A12, A12_t, lda, lda, XA2, YA2);  // A12_t
-    strassen(A12_t, A11, W_1, lda, lda, lw1, YA2, XA2, XA2, XA2, YA2, YA2, depth - 1);  // S5 = strassen(A12_t, A11)
-    GPU_trans(A22, A22_t, lda, lda, XA2, YA2);  // A22_t
-    strassen(A22_t, A21, W_2, lda, lda, lw2, YA2, XA2, XA2, XA2, YA2, YA2, depth - 1);  // S6 = strassen(A22_t, A21)
+    GPU_trans(A12, A12_t, lda, YA, XA2, YA2);  // A12_t
+    strassen(A12_t, A11, W_1, YA, lda, lw1, YA2, XA2, XA2, XA2, YA2, YA2, depth - 1);  // S5 = strassen(A12_t, A11)
+    GPU_trans(A22, A22_t, lda, YA, XA2, YA2);  // A22_t
+    strassen(A22_t, A21, W_2, YA, lda, lw2, YA2, XA2, XA2, XA2, YA2, YA2, depth - 1);  // S6 = strassen(A22_t, A21)
     GPU_add(W_1, W_2, C21, lw1, lw2, ldc, XA2, YA2, 1.0,  1.0);  // C21 = S5 + S6
   }
   cudaFree(W_1);
@@ -107,39 +126,39 @@ void ata(double *A, double *C,
   cudaFree(A22_t);
 
   /* dynamic peeling fix-up */
-  int pxa = XA % 2;
-  int pya = YA % 2;
-  int pxc = XC % 2;
-  int pyc = YC % 2;
-  
-  int nxa = XA - pxa;
-  int nya = YA - pya;
-  int nxc = XC - pxc;
-  int nyc = YC - pyc;
+  // int pxa = XA % 2;
+  // int pya = YA % 2;
+  // int pxc = XC % 2;
+  // int pyc = YC % 2;
 
-  double *a12, *a21;
-  double *c12, *c21;
-  int dxa = nxa;
-  int dya = nya * lda;
-  int dxc = nxc;
-  int dyc = nyc * ldc;
-  
-  a12 = A + dxa;
-  a21 = A + dya;
-  // a22 = A + dxa + dya;
-  // b22 = B + dxb + dyb;
-  // c12 = C + dxc;
-  c21 = C + dyc;
-  // c22 = C + dxc + dyc;
+  // int nxa = XA - pxa;
+  // int nya = YA - pya;
+  // int nxc = XC - pxc;
+  // int nyc = YC - pyc;
 
-  /* 
-    A11 = nxa x nya
-    a12 = pxa x nya
-    a21 = nxa x pya
-    a22 = pxa x pya
-   */
-  GPU_mul_t(a21, A11, c21, lda, lda, ldc, nxa, YA, XC, pya, nxa, pyc, 1.0, 0.0);
-  GPU_mul(a12, a21, C11, lda, lda, ldc, pxa, YA,  XC, YA, pxa, YC, 1.0, 1.0);
+  // double *a12, *a21;
+  // double *c12, *c21;
+  // int dxa = nxa;
+  // int dya = nya * lda;
+  // int dxc = nxc;
+  // int dyc = nyc * ldc;
+
+  // a12 = A + dxa;
+  // a21 = A + dya;
+  // // a22 = A + dxa + dya;
+  // // b22 = B + dxb + dyb;
+  // // c12 = C + dxc;
+  // c21 = C + dyc;
+  // // c22 = C + dxc + dyc;
+
+  // /*
+  //   A11 = nxa x nya
+  //   a12 = pxa x nya
+  //   a21 = nxa x pya
+  //   a22 = pxa x pya
+  //  */
+  // GPU_mul_t(a21, A11, c21, lda, lda, ldc, nxa, YA, XC, pya, nxa, pyc, 1.0, 0.0);
+  // GPU_mul(a12, a21, C11, lda, lda, ldc, pxa, YA,  XC, YA, pxa, YC, 1.0, 1.0);
 }
 
 
@@ -163,10 +182,14 @@ int main (int argc, char **argv) {
   double *h_A = (double *)malloc(memSizeA);
   double *h_C = (double *)malloc(memSizeC);
   double *v_C = (double *)malloc(memSizeC);
-  
+
   for (int i = 0; i < sizeA; i++) {
-    h_A[i] = i % 3;
+    h_A[i] = i;
   }
+
+  // for (int i = 0; i < sizeA; i++) {
+  //   h_A[i] = i % 3;
+  // }
   for (int i = 0; i < sizeC; i++) {
     h_C[i] = 0.0;
     v_C[i] = 0.0;
@@ -186,12 +209,13 @@ int main (int argc, char **argv) {
   CudaTimer ct;
   ct.start();
   for (int i = 0; i < iter; i++) {
-    ata(d_A, d_C, M, M, M, N, M, M, depth);
+    ata(d_A, d_C, M, M, M, M, N, M, depth);
   }
   ct.stop();
 
   double strassenTime = ct.value() / iter;
   cudaMemcpy(h_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
+  printm(d_C, 4, 4);
 
 #if 1
   ct.start();
@@ -199,9 +223,11 @@ int main (int argc, char **argv) {
     GPU_ata(d_A, d_C, M, N);
   }
   ct.stop();
-  
+
   double classicTime = ct.value() / iter;
   cudaMemcpy(v_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
+
+  // printm(h_C, M, N);
 
   double speedup = classicTime / strassenTime;
   printf ("%d %d %.2f %.2f %.2f\n", M, N, strassenTime, classicTime, speedup);
