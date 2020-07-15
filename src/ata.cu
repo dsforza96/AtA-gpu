@@ -24,15 +24,7 @@ void GPU_trans(double *A, double *C,
   cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, YA, XA, &one, A, lda, &zero, A, lda, C, ldc);
 }
 
-void GPU_mul_t(double *A, double *B, double *C,
-    int lda, int ldb, int ldc,
-    int XA, int XB, int XC,
-    int YA, int YB, int YC,
-    double alpha, double beta) {
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
-}
-
-void GPU_ata(double *A, double *C, int M, int N) {
+void GPU_AtA(double *A, double *C, int M, int N) {
   double one = 1.0;
   double zero = 0.0;
 #if CMAJOR
@@ -40,6 +32,22 @@ void GPU_ata(double *A, double *C, int M, int N) {
 #else
   cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, N, M, M, &one, A, N, A, M, &zero, C, N);
 #endif
+}
+
+void GPU_AtB(double *A, double *B, double *C,
+    int lda, int ldb, int ldc,
+    int XA, int XB, int XC,
+    int YA, int YB, int YC,
+    double alpha, double beta) {
+  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
+}
+
+void GPU_ABt(double *A, double *B, double *C,
+    int lda, int ldb, int ldc,
+    int XA, int XB, int XC,
+    int YA, int YB, int YC,
+    double alpha, double beta) {
+  cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
 }
 
 /*
@@ -128,39 +136,40 @@ void ata(double *A, double *C,
   cudaFree(A22_t);
 
   /* dynamic peeling fix-up */
-  // int pxa = XA % 2;
-  // int pya = YA % 2;
-  // int pxc = XC % 2;
-  // int pyc = YC % 2;
+  int pxa = XA % 2;
+  int pya = YA % 2;
+  int pxc = XC % 2;
+  int pyc = YC % 2;
 
-  // int nxa = XA - pxa;
-  // int nya = YA - pya;
-  // int nxc = XC - pxc;
-  // int nyc = YC - pyc;
+  int nxa = XA - pxa;
+  int nya = YA - pya;
+  int nxc = XC - pxc;
+  int nyc = YC - pyc;
 
-  // double *a12, *a21;
-  // double *c12, *c21;
-  // int dxa = nxa;
-  // int dya = nya * lda;
-  // int dxc = nxc;
-  // int dyc = nyc * ldc;
+  double *a12, *a21;
+  double *c12, *c21;
+  int dxa = nxa;
+  int dya = nya * lda;
+  int dxc = nxc;
+  int dyc = nyc * ldc;
 
-  // a12 = A + dxa;
-  // a21 = A + dya;
-  // // a22 = A + dxa + dya;
-  // // b22 = B + dxb + dyb;
-  // // c12 = C + dxc;
-  // c21 = C + dyc;
-  // // c22 = C + dxc + dyc;
+  a12 = A + dxa;
+  a21 = A + dya;
+  // a22 = A + dxa + dya;
+  // b22 = B + dxb + dyb;
+  c12 = C + dxc;
+  c21 = C + dyc;
+  // c22 = C + dxc + dyc;
 
-  // /*
-  //   A11 = nxa x nya
-  //   a12 = pxa x nya
-  //   a21 = nxa x pya
-  //   a22 = pxa x pya
-  //  */
-  // GPU_mul_t(a21, A11, c21, lda, lda, ldc, nxa, YA, XC, pya, nxa, pyc, 1.0, 0.0);
-  // GPU_mul(a12, a21, C11, lda, lda, ldc, pxa, YA,  XC, YA, pxa, YC, 1.0, 1.0);
+  /*
+    A11 = nxa x nya
+    a12 = pxa x nya
+    a21 = nxa x pya
+    a22 = pxa x pya
+   */
+  GPU_ABt(a21, A, c21, lda, lda, ldc, XA, XA, XC, pya, YA, pyc, 1.0, 0.0);
+  // GPU_ABt(A11, a12, c12, lda, lda, ldc, nxa, pya, pxc, YA, nxa, YC, 1.0, 0.0);
+  // GPU_ABt(a12, a21, C11, lda, lda, ldc, pxa, XA, XC, YA, pya, YC, 1.0, 1.0);
 }
 
 
