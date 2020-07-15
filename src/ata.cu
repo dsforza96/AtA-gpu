@@ -167,7 +167,7 @@ void ata(double *A, double *C,
     a21 = nxa x pya
     a22 = pxa x pya
    */
-  GPU_ABt(a21, A, c21, lda, lda, ldc, XA, XA, XC, pya, YA, pyc, 1.0, 0.0);
+  GPU_AtB(a12, A, c21, lda, lda, ldc, YA, XA, XC, pxa, YA, pyc, 1.0, 0.0);
   // GPU_ABt(A11, a12, c12, lda, lda, ldc, nxa, pya, pxc, YA, nxa, YC, 1.0, 0.0);
   // GPU_ABt(a12, a21, C11, lda, lda, ldc, pxa, XA, XC, YA, pya, YC, 1.0, 1.0);
 }
