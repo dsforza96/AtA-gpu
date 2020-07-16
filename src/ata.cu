@@ -146,7 +146,7 @@ void ata(Float *A, Float *C,
 // void printm(Float* arr, int m, int n) {
 //   for (int i = 0; i < m; i++) {
 //    for (int j = 0; j < n; j++) {
-//       printf("%f ", arr[j + i * n]);
+//       printf("%f ", arr[i * n + j]);
 //    }
 //    printf("\n");
 //   }
