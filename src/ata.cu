@@ -1,4 +1,4 @@
-#include <curand.h>
+#include "ata.h"
 #include "strassen.cu"
 
 void GPU_T(double *A, double *C,
@@ -6,7 +6,7 @@ void GPU_T(double *A, double *C,
     int XA, int YA) {
   double one = 1.0;
   double zero = 0.0;
-  cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, XA, YA, &one, A, lda, &zero, C, ldc, C, ldc);
+  cublasGeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, XA, YA, &one, A, lda, &zero, C, ldc, C, ldc);
 }
 
 void GPU_AtB(double *A, double *B, double *C,
@@ -14,7 +14,7 @@ void GPU_AtB(double *A, double *B, double *C,
     int XA, int XB, int XC,
     int YA, int YB, int YC,
     double alpha, double beta) {
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
+  cublasGemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
 }
 
 /*
@@ -184,7 +184,7 @@ int main (int argc, char **argv) {
   }
 
   curandSetPseudoRandomGeneratorSeed(rng, rand());
-  curandGenerateUniformDouble(rng, d_A, sizeA);
+  curandGenerateUniform(rng, d_A, sizeA);
   // cudaMemcpy(h_A, d_A, memSizeA, cudaMemcpyDeviceToHost);
   // printm(h_A, M, N);
 

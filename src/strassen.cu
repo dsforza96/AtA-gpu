@@ -49,7 +49,7 @@
 #include <cmath>
 
 
-cublasHandle_t handle;
+extern cublasHandle_t handle;
 
 
 class CudaTimer
