@@ -21,17 +21,7 @@ void GPU_T(double *A, double *C,
     int XA, int YA) {
   double one = 1.0;
   double zero = 0.0;
-  cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_T, YA, XA, &one, A, lda, &zero, A, lda, C, ldc);
-}
-
-void GPU_AtA(double *A, double *C, int M, int N) {
-  double one = 1.0;
-  double zero = 0.0;
-#if CMAJOR
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, M, &one, A, M, A, M, &zero, C, M);
-#else
-  cublasDgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N, N, M, M, &one, A, N, A, M, &zero, C, N);
-#endif
+  cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, YA, XA, &one, A, lda, &zero, C, ldc, C, ldc);
 }
 
 void GPU_AtB(double *A, double *B, double *C,
@@ -62,10 +52,9 @@ void ata(double *A, double *C,
   int YC2 = YC / 2;
 
   double *W_1, *W_2;
-  int lw1 = XC2;
-  int lw2 = lw1;
-  cudaMalloc((void **)&W_1, lw1 * YC2 * sizeof(double));
-  cudaMalloc((void **)&W_2, lw2 * YC2 * sizeof(double));
+  int ldw = XC2;
+  cudaMalloc((void **)&W_1, ldw * YC2 * sizeof(double));
+  cudaMalloc((void **)&W_2, ldw * YC2 * sizeof(double));
 
   int dXA = XA2;
   int dYA = YA2 * lda;
@@ -74,7 +63,7 @@ void ata(double *A, double *C,
   int dYC = YC2 * ldc;
 
   double *A11, *A12, *A21, *A22;
-  double *C11, *C12, *C21, *C22;
+  double *C11, *C21, *C22;
 
   A11 = A;
   A12 = A + dXA;
@@ -100,32 +89,32 @@ void ata(double *A, double *C,
 #endif
 
   if (depth <= 1 || stop) {
-    GPU_AtB(A11, A11, W_1, lda, lda, lw1, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);   // S1 = ata(A11)
-    GPU_AtB(A21, A21, W_2, lda, lda, lw2, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S2 = ata(A21)
-    GPU_add(W_1, W_2, C11, lw1, lw2, ldc, XC2, YC2, 1.0, 1.0);  // C11 = S1 + S2
-    GPU_AtB(A12, A12, W_1, lda, lda, lw1, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S3 = ata(A12)
-    GPU_AtB(A22, A22, W_2, lda, lda, lw2, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S4 = ata(A22)
-    GPU_add(W_1, W_2, C22, lw1, lw2, ldc, XC2, YC2, 1.0,  1.0);  // C22 = S3 + S4
-    GPU_AtB(A12, A11, W_1, lda, lda, lw1, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S5 = strassen(A12_t, A11)
-    GPU_AtB(A22, A21, W_2, lda, lda, lw2, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S6 = strassen(A22_t, A21)
-    GPU_add(W_1, W_2, C21, lw1, lw2, ldc, XC2, YC2, 1.0,  1.0);  // C21 = S5 + S6
+    GPU_AtB(A11, A11, W_1, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);   // S1 = ata(A11)
+    GPU_AtB(A21, A21, W_2, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S2 = ata(A21)
+    GPU_add(W_1, W_2, C11, ldw, ldw, ldc, XC2, YC2, 1.0, 1.0);  // C11 = S1 + S2
+    GPU_AtB(A12, A12, W_1, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S3 = ata(A12)
+    GPU_AtB(A22, A22, W_2, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S4 = ata(A22)
+    GPU_add(W_1, W_2, C22, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C22 = S3 + S4
+    GPU_AtB(A12, A11, W_1, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S5 = strassen(A12_t, A11)
+    GPU_AtB(A22, A21, W_2, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S6 = strassen(A22_t, A21)
+    GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C21 = S5 + S6
   }
   else {
     double *A2t;
     int ldt = YA2;
     cudaMalloc((void **)&A2t, ldt * XA2 * sizeof(double));
 
-    ata(A11, W_1, lda, lw1, XA2, XC2, YA2, YC2, depth - 1);  // S1 = ata(A11)
-    ata(A21, W_2, lda, lw2, XA2, XC2, YA2, YC2, depth - 1);  // S2 = ata(A21)
-    GPU_add(W_1, W_2, C11, lw1, lw2, ldc, XC2, YC2, 1.0, 1.0);  // C11 = S1 + S2
-    ata(A12, W_1, lda, lw1, XA2, XC2, YA2, YC2, depth - 1);  // S3 = ata(A12)
-    ata(A22, W_2, lda, lw2, XA2, XC2, YA2, YC2, depth - 1);  // S4 = ata(A22)
-    GPU_add(W_1, W_2, C22, lw1, lw2, ldc, XC2, YC2, 1.0,  1.0);  // C22 = S3 + S4
+    ata(A11, W_1, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);  // S1 = ata(A11)
+    ata(A21, W_2, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);  // S2 = ata(A21)
+    GPU_add(W_1, W_2, C11, ldw, ldw, ldc, XC2, YC2, 1.0, 1.0);  // C11 = S1 + S2
+    ata(A12, W_1, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);  // S3 = ata(A12)
+    ata(A22, W_2, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);  // S4 = ata(A22)
+    GPU_add(W_1, W_2, C22, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C22 = S3 + S4
     GPU_T(A12, A2t, lda, ldt, XA2, YA2);  // A12_t
-    strassen(A2t, A11, W_1, ldt, lda, lw1, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S5 = strassen(A12_t, A11)
+    strassen(A2t, A11, W_1, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S5 = strassen(A12_t, A11)
     GPU_T(A22, A2t, lda, ldt, XA2, YA2);  // A22_t
-    strassen(A2t, A21, W_2, ldt, lda, lw2, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S6 = strassen(A22_t, A21)
-    GPU_add(W_1, W_2, C21, lw1, lw2, ldc, XC2, YC2, 1.0,  1.0);  // C21 = S5 + S6
+    strassen(A2t, A21, W_2, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S6 = strassen(A22_t, A21)
+    GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C21 = S5 + S6
     
     cudaFree(A2t);
     cudaFree(A2t);
@@ -145,17 +134,16 @@ void ata(double *A, double *C,
   int nyc = YC - pyc;
 
   double *a12, *a21;
-  double *c12, *c21;
+  double *c21;
   int dxa = nxa;
   int dya = nya * lda;
-  int dxc = nxc;
+  // int dxc = nxc;
   int dyc = nyc * ldc;
 
   a12 = A + dxa;
   a21 = A + dya;
   // a22 = A + dxa + dya;
-  // b22 = B + dxb + dyb;
-  c12 = C + dxc;
+  // c12 = C + dxc;
   c21 = C + dyc;
   // c22 = C + dxc + dyc;
 

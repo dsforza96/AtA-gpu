@@ -1,7 +1,8 @@
 {
     "files.associations": {
         "*.cu": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "random": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cmake.configureOnOpen": true
