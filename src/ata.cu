@@ -1,18 +1,6 @@
 #include <curand.h>
 #include "strassen.cu"
 
-void printm(double* arr_, int m, int n) {
-  double *arr = (double *)malloc(m * n * sizeof(double));
-  cudaMemcpy(arr, arr_, m * n * sizeof(double), cudaMemcpyDeviceToHost);
-  for (int i = 0; i < m; i++) {
-   for (int j = 0; j < n; j++) {
-      printf("%f ", arr[j + i * n]);
-   }
-   printf("\n");
-  }
-  printf("\n");
-}
-
 void GPU_T(double *A, double *C,
     int lda, int ldc,
     int XA, int YA) {
@@ -153,6 +141,16 @@ void ata(double *A, double *C,
   GPU_AtB(a21, a21, C11, lda, lda, ldc, pya, nxa, nxc, nxa, pya, nyc, 1.0, 1.0);
 }
 
+// void printm(double* arr, int m, int n) {
+//   for (int i = 0; i < m; i++) {
+//    for (int j = 0; j < n; j++) {
+//       printf("%f ", arr[j + i * n]);
+//    }
+//    printf("\n");
+//   }
+//   printf("\n");
+// }
+
 
 int main (int argc, char **argv) {
   if(argc != 6) {
@@ -178,7 +176,6 @@ int main (int argc, char **argv) {
   double *d_A, *d_C;
   cudaMalloc((void**)&d_A, memSizeA);
   cudaMalloc((void**)&d_C, memSizeC);
-  // cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
 
   curandGenerator_t rng;
 
@@ -190,6 +187,8 @@ int main (int argc, char **argv) {
 
   curandSetPseudoRandomGeneratorSeed(rng, rand());
   curandGenerateUniformDouble(rng, d_A, sizeA);
+  // cudaMemcpy(h_A, d_A, memSizeA, cudaMemcpyDeviceToHost);
+  // printm(h_A, M, N);
 
   if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
     fprintf(stderr, "!!!! cuBLAS initialization error\n");
@@ -206,8 +205,7 @@ int main (int argc, char **argv) {
 
   double ataTime = ct.value() / iter;
   cudaMemcpy(h_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
-  // printm(d_A, M, N);
-  // printm(d_C, N, N);
+  // printm(h_C, N, N);
 
   ct.start();
   for (int i = 0; i < iter; i++) {
@@ -217,7 +215,7 @@ int main (int argc, char **argv) {
 
   double classicTime = ct.value() / iter;
   cudaMemcpy(v_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
-  // printm(d_C, N, N);
+  // printm(v_C, N, N);
 
   double speedup = classicTime / ataTime;
   printf ("M: %d; N: %d; AtA time: %.2f; classic time %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
