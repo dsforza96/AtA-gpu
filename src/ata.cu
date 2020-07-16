@@ -5,19 +5,19 @@
 cublasHandle_t handle;
 
 
-void GPU_T(double *A, double *C,
+void GPU_T(Float *A, Float *C,
     int lda, int ldc,
     int XA, int YA) {
-  double one = 1.0;
-  double zero = 0.0;
+  Float one = 1.0;
+  Float zero = 0.0;
   cublasGeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, XA, YA, &one, A, lda, &zero, C, ldc, C, ldc);
 }
 
-void GPU_AtB(double *A, double *B, double *C,
+void GPU_AtB(Float *A, Float *B, Float *C,
     int lda, int ldb, int ldc,
     int XA, int XB, int XC,
     int YA, int YB, int YC,
-    double alpha, double beta) {
+    Float alpha, Float beta) {
   cublasGemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
 }
 
@@ -28,7 +28,7 @@ void GPU_AtB(double *A, double *B, double *C,
   A = XA x YA
   C = XC x YC
 */
-void ata(double *A, double *C,
+void ata(Float *A, Float *C,
     int lda, int ldc,
     int XA, int XC,
     int YA, int YC,
@@ -40,10 +40,10 @@ void ata(double *A, double *C,
   int YA2 = YA / 2;
   int YC2 = YC / 2;
 
-  double *W_1, *W_2;
+  Float *W_1, *W_2;
   int ldw = XC2;
-  cudaMalloc((void **)&W_1, ldw * YC2 * sizeof(double));
-  cudaMalloc((void **)&W_2, ldw * YC2 * sizeof(double));
+  cudaMalloc((void **)&W_1, ldw * YC2 * sizeof(Float));
+  cudaMalloc((void **)&W_2, ldw * YC2 * sizeof(Float));
 
   int dXA = XA2;
   int dYA = YA2 * lda;
@@ -51,8 +51,8 @@ void ata(double *A, double *C,
   int dXC = XC2;
   int dYC = YC2 * ldc;
 
-  double *A11, *A12, *A21, *A22;
-  double *C11, *C21, *C22;
+  Float *A11, *A12, *A21, *A22;
+  Float *C11, *C21, *C22;
 
   A11 = A;
   A12 = A + dXA;
@@ -86,9 +86,9 @@ void ata(double *A, double *C,
     GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);                     // C21 = S5 + S6
   }
   else {
-    double *A2t;
+    Float *A2t;
     int ldt = YA2;
-    cudaMalloc((void **)&A2t, ldt * XA2 * sizeof(double));
+    cudaMalloc((void **)&A2t, ldt * XA2 * sizeof(Float));
 
     ata(A11, W_1, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);                           // S1 = ata(A11)
     ata(A21, W_2, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);                           // S2 = ata(A21)
@@ -119,8 +119,8 @@ void ata(double *A, double *C,
   int nxc = XC - pxc;
   int nyc = YC - pyc;
 
-  double *a12, *a21;
-  double *c21;
+  Float *a12, *a21;
+  Float *c21;
   int dxa = nxa;
   int dya = nya * lda;
   // int dxc = nxc;
@@ -143,7 +143,7 @@ void ata(double *A, double *C,
   GPU_AtB(a21, a21, C11, lda, lda, ldc, pya, nxa, nxc, nxa, pya, nyc, 1.0, 1.0);
 }
 
-// void printm(double* arr, int m, int n) {
+// void printm(Float* arr, int m, int n) {
 //   for (int i = 0; i < m; i++) {
 //    for (int j = 0; j < n; j++) {
 //       printf("%f ", arr[j + i * n]);
@@ -168,14 +168,14 @@ int main (int argc, char **argv) {
 
   int sizeA = M * N;
   int sizeC = N * N;
-  int memSizeA = sizeA * sizeof(double);
-  int memSizeC = sizeC * sizeof(double);
+  int memSizeA = sizeA * sizeof(Float);
+  int memSizeC = sizeC * sizeof(Float);
 
-  // double *h_A = (double *)malloc(memSizeA);
-  double *h_C = (double *)malloc(memSizeC);
-  double *v_C = (double *)malloc(memSizeC);
+  // Float *h_A = (Float *)malloc(memSizeA);
+  Float *h_C = (Float *)malloc(memSizeC);
+  Float *v_C = (Float *)malloc(memSizeC);
 
-  double *d_A, *d_C;
+  Float *d_A, *d_C;
   cudaMalloc((void**)&d_A, memSizeA);
   cudaMalloc((void**)&d_C, memSizeC);
 
