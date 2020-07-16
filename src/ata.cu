@@ -156,7 +156,7 @@ void ata(double *A, double *C,
 
 int main (int argc, char **argv) {
   if(argc != 6) {
-    printf("Usage: ata <M> <N> <iter> <check> <depth>\n");
+    printf("Usage: ata_<t>p <M> <N> <iter> <check> <depth>\n");
     return -1;
   }
 
