@@ -193,7 +193,7 @@ void strassen(Float *A, Float *B, Float *C,
   /* cutoff criteria */
   bool stop = false;
   
-#if 0
+#if 1
   int cutoff = 2048;
   float mm = cutoff / XB2;
   float nn = cutoff / YA2;

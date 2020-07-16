@@ -16,4 +16,4 @@ typedef float Float;
 
 #endif // FLOAT_AS_DOUBLE
 
-void ata(double *A, double *C, int lda, int ldc, int XA, int XC, int YA, int YC, int depth);
+void ata(Float *A, Float *C, int lda, int ldc, int XA, int XC, int YA, int YC, int depth);

@@ -224,13 +224,14 @@ int main (int argc, char **argv) {
 
   if (check) {
     double absErr = 0.0;
-    for (int i = 0; i < M; i++) {
+    for (int i = 0; i < N; i++) {
       for (int j = 0; j <= i; j++) {
         absErr += abs(h_C[i * N + j] - v_C[i * N + j]);
       }
     }
-    if (absErr > 1.0) {
-      printf("CHECK: Absolute error: %lf\n", absErr);
+    absErr /= N * (N + 1) / 2;
+    if (absErr > 1e-3) {
+      printf("CHECK: Mean absolute error: %lf\n", absErr);
     }
   }
 
