@@ -1,16 +1,13 @@
+#include <curand.h>
 #include "strassen.cu"
 
 void printm(double* arr_, int m, int n) {
-  double* arr = (double *)malloc(m * n * sizeof(double));
-  cudaMemcpy(arr, arr_, m * n * sizeof(double), cudaMemcpyDeviceToHost);
-  for (int i = 0; i < m; i++)
-  {
-   for (int j = 0; j < n; j++)
-   {
+  double *arr = (double *)malloc(m*n*sizeof(double));
+  cudaMemcpy(arr, arr_, m*n*sizeof(double), cudaMemcpyDeviceToHost);
+  for (int i = 0; i < m; i++) {
+   for (int j = 0; j < n; j++) {
       printf("%f ", arr[j + i * n]);
    }
-
-   // Newline for new row
    printf("\n");
   }
   printf("\n");
@@ -175,32 +172,34 @@ int main (int argc, char **argv) {
   int memSizeA = sizeA * sizeof(double);
   int memSizeC = sizeC * sizeof(double);
 
-  double *h_A = (double *)malloc(memSizeA);
+  // double *h_A = (double *)malloc(memSizeA);
   double *h_C = (double *)malloc(memSizeC);
   double *v_C = (double *)malloc(memSizeC);
-
-  for (int i = 0; i < sizeA; i++) {
-    h_A[i] = i;
-  }
 
   // for (int i = 0; i < sizeA; i++) {
   //   h_A[i] = i % 3;
   // }
-  for (int i = 0; i < sizeC; i++) {
-    h_C[i] = 0.0;
-    v_C[i] = 0.0;
-  }
+  // for (int i = 0; i < sizeC; i++) {
+  //   h_C[i] = 0.0;
+  //   v_C[i] = 0.0;
+  // }
 
   double *d_A, *d_C;
   cudaMalloc((void**)&d_A, memSizeA);
   cudaMalloc((void**)&d_C, memSizeC);
-  cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
+  // cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
 
   if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
     fprintf(stderr, "!!!! CUBLAS initialization error\n");
     fflush(NULL);
     return EXIT_FAILURE;
   }
+
+  curandGenerator_t rng;
+  curandCreateGenerator(&rng, CURAND_RNG_PSEUDO_DEFAULT);
+  curandSetPseudoRandomGeneratorSeed(rng, rand());
+  curandGenerateUniformDouble(rng, d_A, sizeA);
+  curandDestroyGenerator(rng);
 
   CudaTimer ct;
   ct.start();
@@ -209,10 +208,10 @@ int main (int argc, char **argv) {
   }
   ct.stop();
 
-  double strassenTime = ct.value() / iter;
+  double ataTime = ct.value() / iter;
   cudaMemcpy(h_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
-  printm(d_A, M, N);
-  printm(d_C, N, N);
+  // printm(d_A, M, N);
+  // printm(d_C, N, N);
 
   ct.start();
   for (int i = 0; i < iter; i++) {
@@ -222,10 +221,10 @@ int main (int argc, char **argv) {
 
   double classicTime = ct.value() / iter;
   cudaMemcpy(v_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
-  printm(d_C, N, N);
+  // printm(d_C, N, N);
 
-  double speedup = classicTime / strassenTime;
-  printf ("%d %d %.2f %.2f %.2f\n", M, N, strassenTime, classicTime, speedup);
+  double speedup = classicTime / ataTime;
+  printf ("M: %d, N: %d, AtA time: %.2f, classic time %.2f, speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
 
   if (check) {
     double absErr = 0.0;
@@ -239,7 +238,7 @@ int main (int argc, char **argv) {
     }
   }
 
-  free(h_A);
+  // free(h_A);
   free(h_C);
   free(v_C);
   cudaFree(d_A);
