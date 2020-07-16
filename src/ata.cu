@@ -89,14 +89,14 @@ void ata(double *A, double *C,
 #endif
 
   if (depth <= 1 || stop) {
-    GPU_AtB(A11, A11, W_1, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);   // S1 = ata(A11)
-    GPU_AtB(A21, A21, W_2, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S2 = ata(A21)
+    GPU_AtB(A11, A11, W_1, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);   // S1 = ata(A11)
+    GPU_AtB(A21, A21, W_2, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S2 = ata(A21)
     GPU_add(W_1, W_2, C11, ldw, ldw, ldc, XC2, YC2, 1.0, 1.0);  // C11 = S1 + S2
-    GPU_AtB(A12, A12, W_1, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S3 = ata(A12)
-    GPU_AtB(A22, A22, W_2, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S4 = ata(A22)
+    GPU_AtB(A12, A12, W_1, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S3 = ata(A12)
+    GPU_AtB(A22, A22, W_2, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S4 = ata(A22)
     GPU_add(W_1, W_2, C22, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C22 = S3 + S4
-    GPU_AtB(A12, A11, W_1, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S5 = strassen(A12_t, A11)
-    GPU_AtB(A22, A21, W_2, lda, lda, ldw, XA2, XA2, XC2, YA2, YA2, YC2, 1.0, 0.0);  // S6 = strassen(A22_t, A21)
+    GPU_AtB(A12, A11, W_1, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S5 = strassen(A12_t, A11)
+    GPU_AtB(A22, A21, W_2, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S6 = strassen(A22_t, A21)
     GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C21 = S5 + S6
   }
   else {
@@ -214,19 +214,18 @@ int main (int argc, char **argv) {
   printm(d_A, M, N);
   printm(d_C, N, N);
 
-#if 0
   ct.start();
   for (int i = 0; i < iter; i++) {
-    GPU_ata(d_A, d_C, M, N);
+    GPU_AtB(d_A, d_A, d_C, N, N, N, M, N, N, N, M, N, 1.0, 0.0);
   }
   ct.stop();
 
   double classicTime = ct.value() / iter;
   cudaMemcpy(v_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
+  printm(d_C, N, N);
 
   double speedup = classicTime / strassenTime;
   printf ("%d %d %.2f %.2f %.2f\n", M, N, strassenTime, classicTime, speedup);
-#endif
 
   if (check) {
     double absErr = 0.0;
