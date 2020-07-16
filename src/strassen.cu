@@ -47,7 +47,6 @@
 #include <cuda.h>
 
 #include <cmath>
-
 #include "ata.h"
 
 
