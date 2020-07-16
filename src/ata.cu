@@ -63,14 +63,12 @@ void ata(double *A, double *C,
   /* cutoff criteria */
   bool stop = false;
 
-#if 1
   int cutoff = 2048;
   float mm = cutoff / XA2;
   float nn = cutoff / YA2;
   if ((mm + nn) >= 2) {
       stop = true;
   }
-#endif
 
   if (depth <= 1 || stop) {
     GPU_AtB(A11, A11, W_1, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S1 = ata(A11)
@@ -227,7 +225,7 @@ int main (int argc, char **argv) {
         absErr += abs(h_C[i * N + j] - v_C[i * N + j]);
       }
     }
-    if (absErr > 1) {
+    if (absErr > 1.0) {
       printf("CHECK: Absolute error: %lf\n", absErr);
     }
   }
