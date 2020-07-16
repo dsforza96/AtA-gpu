@@ -156,7 +156,7 @@ void ata(double *A, double *C,
 
 int main (int argc, char **argv) {
   if(argc != 6) {
-    printf("Usage: ata_<t>p <M> <N> <iter> <check> <depth>\n");
+    printf("Usage: %s <M> <N> <iter> <check> <depth>\n", argv[0]);
     return -1;
   }
 
@@ -220,7 +220,7 @@ int main (int argc, char **argv) {
   // printm(d_C, N, N);
 
   double speedup = classicTime / ataTime;
-  printf ("M: %d, N: %d, AtA time: %.2f, classic time %.2f, speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
+  printf ("M: %d; N: %d; AtA time: %.2f; classic time %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
 
   if (check) {
     double absErr = 0.0;
