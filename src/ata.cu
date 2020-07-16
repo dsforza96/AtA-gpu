@@ -1,6 +1,10 @@
 #include "ata.h"
 #include "strassen.cu"
 
+
+cublasHandle_t handle;
+
+
 void GPU_T(double *A, double *C,
     int lda, int ldc,
     int XA, int YA) {

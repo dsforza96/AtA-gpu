@@ -48,6 +48,8 @@
 
 #include <cmath>
 
+#include "ata.h"
+
 
 extern cublasHandle_t handle;
 

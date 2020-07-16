@@ -1,8 +1,6 @@
 #include <cublas_v2.h>
 #include <curand.h>
 
-cublasHandle_t handle;
-
 #ifdef FLOAT_AS_DOUBLE
 
 typedef double Float;
