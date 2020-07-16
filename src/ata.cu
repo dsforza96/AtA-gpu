@@ -65,14 +65,10 @@ void ata(Float *A, Float *C,
   C22 = C + dXC + dYC;
 
   /* cutoff criteria */
-  bool stop = false;
-
   int cutoff = 2048;
   float mm = cutoff / XA2;
   float nn = cutoff / YA2;
-  if ((mm + nn) >= 2) {
-      stop = true;
-  }
+  bool stop = mm + nn >= 2;
 
   if (depth <= 1 || stop) {
     GPU_AtB(A11, A11, W_1, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S1 = ata(A11)
