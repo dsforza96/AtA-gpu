@@ -2,8 +2,8 @@
 #include "strassen.cu"
 
 void printm(double* arr_, int m, int n) {
-  double *arr = (double *)malloc(m*n*sizeof(double));
-  cudaMemcpy(arr, arr_, m*n*sizeof(double), cudaMemcpyDeviceToHost);
+  double *arr = (double *)malloc(m * n * sizeof(double));
+  cudaMemcpy(arr, arr_, m * n * sizeof(double), cudaMemcpyDeviceToHost);
   for (int i = 0; i < m; i++) {
    for (int j = 0; j < n; j++) {
       printf("%f ", arr[j + i * n]);
