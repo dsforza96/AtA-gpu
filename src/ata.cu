@@ -75,12 +75,11 @@ void ata(double *A, double *C,
   /* cutoff criteria */
   bool stop = false;
 
-#if 0
+#if 1
   int cutoff = 2048;
-  float mm = cutoff / XB2;
+  float mm = cutoff / XA2;
   float nn = cutoff / YA2;
-  float kk = cutoff / XA2;
-  if ((mm + nn + kk) >= 3) {
+  if ((mm + nn) >= 2) {
       stop = true;
   }
 #endif
@@ -181,17 +180,22 @@ int main (int argc, char **argv) {
   cudaMalloc((void**)&d_C, memSizeC);
   // cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
 
-  if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
-    fprintf(stderr, "!!!! CUBLAS initialization error\n");
+  curandGenerator_t rng;
+
+  if (curandCreateGenerator(&rng, CURAND_RNG_PSEUDO_DEFAULT) != CURAND_STATUS_SUCCESS) {
+    fprintf(stderr, "!!!! cuRAND initialization error\n");
     fflush(NULL);
     return EXIT_FAILURE;
   }
 
-  curandGenerator_t rng;
-  curandCreateGenerator(&rng, CURAND_RNG_PSEUDO_DEFAULT);
   curandSetPseudoRandomGeneratorSeed(rng, rand());
   curandGenerateUniformDouble(rng, d_A, sizeA);
-  curandDestroyGenerator(rng);
+
+  if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
+    fprintf(stderr, "!!!! cuBLAS initialization error\n");
+    fflush(NULL);
+    return EXIT_FAILURE;
+  }
 
   CudaTimer ct;
   ct.start();
@@ -236,8 +240,14 @@ int main (int argc, char **argv) {
   cudaFree(d_A);
   cudaFree(d_C);
 
+  if (curandDestroyGenerator(rng) != CURAND_STATUS_SUCCESS) {
+    fprintf(stderr, "!!!! cuRAND shutdown error\n");
+    fflush(NULL);
+    return EXIT_FAILURE;
+  }
+
   if (cublasDestroy(handle) != CUBLAS_STATUS_SUCCESS) {
-    fprintf(stderr, "!!!! CUBLAS shutdown error\n");
+    fprintf(stderr, "!!!! cuBLAS shutdown error\n");
     fflush(NULL);
     return EXIT_FAILURE;
   }
