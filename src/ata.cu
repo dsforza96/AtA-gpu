@@ -21,7 +21,7 @@ void GPU_T(double *A, double *C,
     int XA, int YA) {
   double one = 1.0;
   double zero = 0.0;
-  cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, YA, XA, &one, A, lda, &zero, C, ldc, C, ldc);
+  cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, XA, YA, &one, A, lda, &zero, C, ldc, C, ldc);
 }
 
 void GPU_AtB(double *A, double *B, double *C,
@@ -110,10 +110,10 @@ void ata(double *A, double *C,
     ata(A12, W_1, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);  // S3 = ata(A12)
     ata(A22, W_2, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);  // S4 = ata(A22)
     GPU_add(W_1, W_2, C22, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C22 = S3 + S4
-    GPU_T(A12, A2t, lda, ldt, XA2, YA2);  // A12_t
-    strassen(A2t, A11, W_1, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S5 = strassen(A12_t, A11)
-    GPU_T(A22, A2t, lda, ldt, XA2, YA2);  // A22_t
-    strassen(A2t, A21, W_2, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S6 = strassen(A22_t, A21)
+    GPU_T(A12, A2t, lda, ldt, YA2, XA2);  // A12t
+    strassen(A2t, A11, W_1, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S5 = strassen(A12t, A11)
+    GPU_T(A22, A2t, lda, ldt, YA2, XA2);  // A22t
+    strassen(A2t, A21, W_2, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S6 = strassen(A22t, A21)
     GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);  // C21 = S5 + S6
     
     cudaFree(A2t);
@@ -229,8 +229,10 @@ int main (int argc, char **argv) {
 
   if (check) {
     double absErr = 0.0;
-    for (int i = 0; i < sizeC; i++) {
-      absErr += abs(h_C[i] - v_C[i]);
+    for (int i = 0; i < M; i++) {
+      for (int j = 0; j <= i; j++) {
+        absErr += abs(h_C[i * N + j] - v_C[i * N + j]);
+      }
     }
     if (absErr > 1) {
       printf("CHECK: Absolute error: %lf\n", absErr);
