@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #include "ata.h"
 #include "strassen.cu"
 
@@ -5,8 +7,7 @@
 cublasHandle_t handle;
 
 
-void GPU_T(Float *A, Float *C,
-    int lda, int ldc,
+void GPU_T(Float *A, Float *C, int lda, int ldc,
     int XA, int YA) {
   Float one = 1.0;
   Float zero = 0.0;
@@ -28,12 +29,8 @@ void GPU_AtB(Float *A, Float *B, Float *C,
   A = XA x YA
   C = XC x YC
 */
-void ata(Float *A, Float *C,
-    int lda, int ldc,
-    int XA, int XC,
-    int YA, int YC,
-    int depth) {
-
+void ata(Float *A, Float *C, int lda, int ldc,
+    int XA, int XC, int YA, int YC, int depth) {
   int XA2 = XA / 2;
   int XC2 = XC / 2;
 
@@ -148,7 +145,7 @@ void ata(Float *A, Float *C,
 // }
 
 
-int main (int argc, char **argv) {
+int main(int argc, char **argv) {
   if(argc != 6) {
     printf("Usage: %s <M> <N> <iter> <check> <depth>\n", argv[0]);
     return -1;
@@ -178,8 +175,8 @@ int main (int argc, char **argv) {
   }
 
   Float *d_A, *d_C;
-  cudaMalloc((void**)&d_A, memSizeA);
-  cudaMalloc((void**)&d_C, memSizeC);
+  cudaMalloc((void **)&d_A, memSizeA);
+  cudaMalloc((void **)&d_C, memSizeC);
   cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
   // printm(h_A, M, N);
 
