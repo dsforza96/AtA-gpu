@@ -5,9 +5,9 @@ project(AtA-gpu LANGUAGES CXX)
 
 find_package(CUDA REQUIRED)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CXX_STANDARD 11)
 set(CXX_STANDARD_REQUIRED YES)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 add_executable(ata-sp ${CMAKE_SOURCE_DIR}/src/ata.cpp)
 target_link_libraries(ata-sp ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})

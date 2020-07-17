@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cuda_runtime_api.h>
 
 #include "ata.h"
 #include "strassen.cpp"
