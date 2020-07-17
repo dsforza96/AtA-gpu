@@ -1,1 +1,1 @@
-# A CUDA Implementation of Strassen-based A<sup>t</sup>A Matrix Multiplication
+# A CUDA Implementation of Strassen-based A^tA Matrix Multiplication
