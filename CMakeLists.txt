@@ -11,8 +11,8 @@ add_executable(ata_sp ${CMAKE_SOURCE_DIR}/src/ata.cu)
 target_link_libraries(ata_sp ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY})
 
 add_executable(ata_dp ${CMAKE_SOURCE_DIR}/src/ata.cu)
-target_compile_definitions(ata_dp PUBLIC -DFLOAT_AS_DOUBLE)
 target_link_libraries(ata_dp ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY})
+target_compile_definitions(ata_dp PUBLIC -DFLOAT_AS_DOUBLE)
 
 set_target_properties(ata_sp ata_dp PROPERTIES CXX_STANDARD 11)
 

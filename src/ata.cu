@@ -98,7 +98,6 @@ void ata(Float *A, Float *C,
     GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);                       // C21 = S5 + S6
 
     cudaFree(A2t);
-    cudaFree(A2t);
   }
   cudaFree(W_1);
   cudaFree(W_2);
