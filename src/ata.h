@@ -7,12 +7,14 @@ typedef double Float;
 #define cublasGeam cublasDgeam
 #define cublasGemm cublasDgemm
 #define curandGenerateUniform curandGenerateUniformDouble
+#define CUTOFF 256
 
 #else
 
 typedef float Float;
 #define cublasGeam cublasSgeam
 #define cublasGemm cublasSgemm
+#define CUTOFF 2048
 
 #endif // FLOAT_AS_DOUBLE
 

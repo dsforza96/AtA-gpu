@@ -65,9 +65,8 @@ void ata(Float *A, Float *C,
   C22 = C + dXC + dYC;
 
   /* cutoff criteria */
-  int cutoff = 2048;
-  float mm = cutoff / XA2;
-  float nn = cutoff / YA2;
+  float mm = CUTOFF / XA2;
+  float nn = CUTOFF / YA2;
   bool stop = mm + nn >= 2;
 
   if (depth <= 1 || stop) {
@@ -216,7 +215,7 @@ int main (int argc, char **argv) {
   // printm(v_C, N, N);
 
   double speedup = classicTime / ataTime;
-  printf ("M: %d; N: %d; AtA time: %.2f; classic time %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
+  printf ("M: %d; N: %d; AtA time: %.2f; classic time: %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
 
   if (check) {
     double absErr = 0.0;
@@ -225,10 +224,8 @@ int main (int argc, char **argv) {
         absErr += abs(h_C[i * N + j] - v_C[i * N + j]);
       }
     }
-    absErr /= N * (N + 1) / 2;
-    if (absErr > 1e-3) {
-      printf("CHECK: Mean absolute error: %lf\n", absErr);
-    }
+    int numel = N * (N + 1) / 2;
+    printf("CHECK: Mean absolute error: %lf\n", absErr / numel);
   }
 
   // free(h_A);

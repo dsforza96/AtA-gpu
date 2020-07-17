@@ -194,10 +194,9 @@ void strassen(Float *A, Float *B, Float *C,
   bool stop = false;
   
 #if 1
-  int cutoff = 2048;
-  float mm = cutoff / XB2;
-  float nn = cutoff / YA2;
-  float kk = cutoff / XA2;
+  float mm = CUTOFF / XB2;
+  float nn = CUTOFF / YA2;
+  float kk = CUTOFF / XA2;
   if ((mm + nn + kk) >= 3) {
       stop = true;
   }
