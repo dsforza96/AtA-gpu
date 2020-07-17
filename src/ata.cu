@@ -1,20 +1,24 @@
-#include <curand.h>
+#include "ata.h"
 #include "strassen.cu"
 
-void GPU_T(double *A, double *C,
+
+cublasHandle_t handle;
+
+
+void GPU_T(Float *A, Float *C,
     int lda, int ldc,
     int XA, int YA) {
-  double one = 1.0;
-  double zero = 0.0;
-  cublasDgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, XA, YA, &one, A, lda, &zero, C, ldc, C, ldc);
+  Float one = 1.0;
+  Float zero = 0.0;
+  cublasGeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, XA, YA, &one, A, lda, &zero, C, ldc, C, ldc);
 }
 
-void GPU_AtB(double *A, double *B, double *C,
+void GPU_AtB(Float *A, Float *B, Float *C,
     int lda, int ldb, int ldc,
     int XA, int XB, int XC,
     int YA, int YB, int YC,
-    double alpha, double beta) {
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
+    Float alpha, Float beta) {
+  cublasGemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
 }
 
 /*
@@ -24,7 +28,7 @@ void GPU_AtB(double *A, double *B, double *C,
   A = XA x YA
   C = XC x YC
 */
-void ata(double *A, double *C,
+void ata(Float *A, Float *C,
     int lda, int ldc,
     int XA, int XC,
     int YA, int YC,
@@ -36,10 +40,10 @@ void ata(double *A, double *C,
   int YA2 = YA / 2;
   int YC2 = YC / 2;
 
-  double *W_1, *W_2;
+  Float *W_1, *W_2;
   int ldw = XC2;
-  cudaMalloc((void **)&W_1, ldw * YC2 * sizeof(double));
-  cudaMalloc((void **)&W_2, ldw * YC2 * sizeof(double));
+  cudaMalloc((void **)&W_1, ldw * YC2 * sizeof(Float));
+  cudaMalloc((void **)&W_2, ldw * YC2 * sizeof(Float));
 
   int dXA = XA2;
   int dYA = YA2 * lda;
@@ -47,8 +51,8 @@ void ata(double *A, double *C,
   int dXC = XC2;
   int dYC = YC2 * ldc;
 
-  double *A11, *A12, *A21, *A22;
-  double *C11, *C21, *C22;
+  Float *A11, *A12, *A21, *A22;
+  Float *C11, *C21, *C22;
 
   A11 = A;
   A12 = A + dXA;
@@ -61,14 +65,9 @@ void ata(double *A, double *C,
   C22 = C + dXC + dYC;
 
   /* cutoff criteria */
-  bool stop = false;
-
-  int cutoff = 2048;
-  float mm = cutoff / XA2;
-  float nn = cutoff / YA2;
-  if ((mm + nn) >= 2) {
-      stop = true;
-  }
+  float mm = CUTOFF / XA2;
+  float nn = CUTOFF / YA2;
+  bool stop = mm + nn >= 2;
 
   if (depth <= 1 || stop) {
     GPU_AtB(A11, A11, W_1, lda, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, 1.0, 0.0);  // S1 = ata(A11)
@@ -82,9 +81,9 @@ void ata(double *A, double *C,
     GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);                     // C21 = S5 + S6
   }
   else {
-    double *A2t;
+    Float *A2t;
     int ldt = YA2;
-    cudaMalloc((void **)&A2t, ldt * XA2 * sizeof(double));
+    cudaMalloc((void **)&A2t, ldt * XA2 * sizeof(Float));
 
     ata(A11, W_1, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);                           // S1 = ata(A11)
     ata(A21, W_2, lda, ldw, XA2, XC2, YA2, YC2, depth - 1);                           // S2 = ata(A21)
@@ -98,7 +97,6 @@ void ata(double *A, double *C,
     strassen(A2t, A21, W_2, ldt, lda, ldw, YA2, XA2, XC2, XA2, YA2, YC2, depth - 1);  // S6 = strassen(A22t, A21)
     GPU_add(W_1, W_2, C21, ldw, ldw, ldc, XC2, YC2, 1.0,  1.0);                       // C21 = S5 + S6
 
-    cudaFree(A2t);
     cudaFree(A2t);
   }
   cudaFree(W_1);
@@ -115,8 +113,8 @@ void ata(double *A, double *C,
   int nxc = XC - pxc;
   int nyc = YC - pyc;
 
-  double *a12, *a21;
-  double *c21;
+  Float *a12, *a21;
+  Float *c21;
   int dxa = nxa;
   int dya = nya * lda;
   // int dxc = nxc;
@@ -139,10 +137,10 @@ void ata(double *A, double *C,
   GPU_AtB(a21, a21, C11, lda, lda, ldc, pya, nxa, nxc, nxa, pya, nyc, 1.0, 1.0);
 }
 
-// void printm(double* arr, int m, int n) {
+// void printm(Float* arr, int m, int n) {
 //   for (int i = 0; i < m; i++) {
 //    for (int j = 0; j < n; j++) {
-//       printf("%f ", arr[j + i * n]);
+//       printf("%f ", arr[i * n + j]);
 //    }
 //    printf("\n");
 //   }
@@ -164,14 +162,14 @@ int main (int argc, char **argv) {
 
   int sizeA = M * N;
   int sizeC = N * N;
-  int memSizeA = sizeA * sizeof(double);
-  int memSizeC = sizeC * sizeof(double);
+  int memSizeA = sizeA * sizeof(Float);
+  int memSizeC = sizeC * sizeof(Float);
 
-  // double *h_A = (double *)malloc(memSizeA);
-  double *h_C = (double *)malloc(memSizeC);
-  double *v_C = (double *)malloc(memSizeC);
+  // Float *h_A = (Float *)malloc(memSizeA);
+  Float *h_C = (Float *)malloc(memSizeC);
+  Float *v_C = (Float *)malloc(memSizeC);
 
-  double *d_A, *d_C;
+  Float *d_A, *d_C;
   cudaMalloc((void**)&d_A, memSizeA);
   cudaMalloc((void**)&d_C, memSizeC);
 
@@ -184,7 +182,7 @@ int main (int argc, char **argv) {
   }
 
   curandSetPseudoRandomGeneratorSeed(rng, rand());
-  curandGenerateUniformDouble(rng, d_A, sizeA);
+  curandGenerateUniform(rng, d_A, sizeA);
   // cudaMemcpy(h_A, d_A, memSizeA, cudaMemcpyDeviceToHost);
   // printm(h_A, M, N);
 
@@ -216,18 +214,17 @@ int main (int argc, char **argv) {
   // printm(v_C, N, N);
 
   double speedup = classicTime / ataTime;
-  printf ("M: %d; N: %d; AtA time: %.2f; classic time %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
+  printf ("M: %d; N: %d; AtA time: %.2f; classic time: %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
 
   if (check) {
     double absErr = 0.0;
-    for (int i = 0; i < M; i++) {
+    for (int i = 0; i < N; i++) {
       for (int j = 0; j <= i; j++) {
         absErr += abs(h_C[i * N + j] - v_C[i * N + j]);
       }
     }
-    if (absErr > 1.0) {
-      printf("CHECK: Absolute error: %lf\n", absErr);
-    }
+    int numel = N * (N + 1) / 2;
+    printf("CHECK: Mean absolute error: %lf\n", absErr / numel);
   }
 
   // free(h_A);

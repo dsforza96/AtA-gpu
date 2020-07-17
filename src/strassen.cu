@@ -47,9 +47,10 @@
 #include <cuda.h>
 
 #include <cmath>
+#include "ata.h"
 
 
-cublasHandle_t handle;
+extern cublasHandle_t handle;
 
 
 class CudaTimer
@@ -110,28 +111,28 @@ float CudaTimer::value() {
   return timeVal;
 }
 
-void GPU_mul(double *A, double *B, double *C,
+void GPU_mul(Float *A, Float *B, Float *C,
     int lda, int ldb, int ldc,
     int XA, int XB, int XC,
     int YA, int YB, int YC,
-    double alpha, double beta) {
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
+    Float alpha, Float beta) {
+  cublasGemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, XB, YA, XA, &alpha, B, ldb, A, lda, &beta, C, ldc);
 }
 
-void GPU_add(double *A, double *B, double *C,
+void GPU_add(Float *A, Float *B, Float *C,
     int lda, int ldb, int ldc,
     int XA, int YA,
-    double alpha, double beta) {
-  cublasDgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N, XA, YA, &alpha, A, lda, &beta, B, ldb, C, ldc);
+    Float alpha, Float beta) {
+  cublasGeam(handle, CUBLAS_OP_N, CUBLAS_OP_N, XA, YA, &alpha, A, lda, &beta, B, ldb, C, ldc);
 }
 
-void verifyByCUBLAS(double *d_A, double *d_B, double *d_C, int M, int N, int K) {
-  double one = 1.0;
-  double zero = 0.0;
+void verifyByCUBLAS(Float *d_A, Float *d_B, Float *d_C, int M, int N, int K) {
+  Float one = 1.0;
+  Float zero = 0.0;
 #if CMAJOR
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &one, d_A, M, d_B, K, &zero, d_C, M);
+  cublasGemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, M, N, K, &one, d_A, M, d_B, K, &zero, d_C, M);
 #else
-  cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &one, d_B, N, d_A, K, &zero, d_C, N);
+  cublasGemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &one, d_B, N, d_A, K, &zero, d_C, N);
 #endif
 }
 
@@ -142,7 +143,7 @@ void verifyByCUBLAS(double *d_A, double *d_B, double *d_C, int M, int N, int K) 
   B = XB x YB
   C = XC x YC
 */
-void strassen(double *A, double *B, double *C,
+void strassen(Float *A, Float *B, Float *C,
     int lda, int ldb, int ldc,
     int XA, int XB, int XC,
     int YA, int YB, int YC,
@@ -156,11 +157,11 @@ void strassen(double *A, double *B, double *C,
   int YB2 = YB / 2;
   int YC2 = YC / 2;
 
-  double *W_1, *W_2;
+  Float *W_1, *W_2;
   int lw1 = (XA2 > XC2 ? XA2 : XC2);
   int lw2 = XB2;
-  cudaMalloc((void **)&W_1, lw1 * YA2 * sizeof(double));
-  cudaMalloc((void **)&W_2, lw2 * YB2 * sizeof(double));
+  cudaMalloc((void **)&W_1, lw1 * YA2 * sizeof(Float));
+  cudaMalloc((void **)&W_2, lw2 * YB2 * sizeof(Float));
 
   int dXA = XA2;
   int dYA = YA2 * lda;
@@ -170,9 +171,9 @@ void strassen(double *A, double *B, double *C,
   int dXC = XC2;
   int dYC = YC2 * ldc;
 
-  double *A11, *A12, *A21, *A22;
-  double *B11, *B12, *B21, *B22;
-  double *C11, *C12, *C21, *C22;
+  Float *A11, *A12, *A21, *A22;
+  Float *B11, *B12, *B21, *B22;
+  Float *C11, *C12, *C21, *C22;
   
   A11 = A;
   A12 = A + dXA;
@@ -192,11 +193,10 @@ void strassen(double *A, double *B, double *C,
   /* cutoff criteria */
   bool stop = false;
   
-#if 0
-  int cutoff = 2048;
-  float mm = cutoff / XB2;
-  float nn = cutoff / YA2;
-  float kk = cutoff / XA2;
+#if 1
+  float mm = CUTOFF / XB2;
+  float nn = CUTOFF / YA2;
+  float kk = CUTOFF / XA2;
   if ((mm + nn + kk) >= 3) {
       stop = true;
   }
@@ -268,9 +268,9 @@ void strassen(double *A, double *B, double *C,
   int nxc = XC - pxc;
   int nyc = YC - pyc;
 
-  double *a12, *a21;
-  double *b12, *b21;
-  double *c12, *c21;
+  Float *a12, *a21;
+  Float *b12, *b21;
+  Float *c12, *c21;
   int dxa = nxa;
   int dya = nya * lda;
   int dxb = nxb;
