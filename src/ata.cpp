@@ -1,7 +1,7 @@
 #include <cstdio>
 
 #include "ata.h"
-#include "strassen.cu"
+#include "strassen.cpp"
 
 
 cublasHandle_t handle;

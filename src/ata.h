@@ -12,6 +12,6 @@ typedef float Float;
 #define cublasGemm cublasSgemm
 #define CUTOFF 2048
 
-#endif // FLOAT_AS_DOUBLE
+#endif  // FLOAT_AS_DOUBLE
 
 void ata(Float *A, Float *C, int lda, int ldc, int XA, int XC, int YA, int YC, int depth);
