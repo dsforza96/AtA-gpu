@@ -17,5 +17,5 @@ target_compile_definitions(ata-dp PUBLIC -DFLOAT_AS_DOUBLE)
 set_target_properties(ata-sp ata-dp PROPERTIES CXX_STANDARD 11)
 
 if(APPLE)
-  set_property(TARGET ata PROPERTY BUILD_RPATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+  set_property(TARGET ata-sp ata-dp PROPERTY BUILD_RPATH ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 endif(APPLE)
