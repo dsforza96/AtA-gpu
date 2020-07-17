@@ -165,25 +165,22 @@ int main (int argc, char **argv) {
   int memSizeA = sizeA * sizeof(Float);
   int memSizeC = sizeC * sizeof(Float);
 
-  // Float *h_A = (Float *)malloc(memSizeA);
+  Float *h_A = (Float *)malloc(memSizeA);
   Float *h_C = (Float *)malloc(memSizeC);
   Float *v_C = (Float *)malloc(memSizeC);
+
+  for (int i = 0; i < sizeA; i++) {
+    h_A[i] = (Float)rand() / RAND_MAX;
+  }
+  for (int i = 0; i < sizeC; i++) {
+    h_C[i] = 0.0;
+    v_C[i] = 0.0;
+  }
 
   Float *d_A, *d_C;
   cudaMalloc((void**)&d_A, memSizeA);
   cudaMalloc((void**)&d_C, memSizeC);
-
-  curandGenerator_t rng;
-
-  if (curandCreateGenerator(&rng, CURAND_RNG_PSEUDO_DEFAULT) != CURAND_STATUS_SUCCESS) {
-    fprintf(stderr, "!!!! cuRAND initialization error\n");
-    fflush(NULL);
-    return EXIT_FAILURE;
-  }
-
-  curandSetPseudoRandomGeneratorSeed(rng, rand());
-  curandGenerateUniform(rng, d_A, sizeA);
-  // cudaMemcpy(h_A, d_A, memSizeA, cudaMemcpyDeviceToHost);
+  cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
   // printm(h_A, M, N);
 
   if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
@@ -227,17 +224,11 @@ int main (int argc, char **argv) {
     printf("CHECK: Mean absolute error: %lf\n", absErr / numel);
   }
 
-  // free(h_A);
+  free(h_A);
   free(h_C);
   free(v_C);
   cudaFree(d_A);
   cudaFree(d_C);
-
-  if (curandDestroyGenerator(rng) != CURAND_STATUS_SUCCESS) {
-    fprintf(stderr, "!!!! cuRAND shutdown error\n");
-    fflush(NULL);
-    return EXIT_FAILURE;
-  }
 
   if (cublasDestroy(handle) != CUBLAS_STATUS_SUCCESS) {
     fprintf(stderr, "!!!! cuBLAS shutdown error\n");

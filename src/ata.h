@@ -1,11 +1,9 @@
 #include <cublas_v2.h>
-#include <curand.h>
 
 #ifdef FLOAT_AS_DOUBLE
 typedef double Float;
 #define cublasGeam cublasDgeam
 #define cublasGemm cublasDgemm
-#define curandGenerateUniform curandGenerateUniformDouble
 #define CUTOFF 256
 
 #else
