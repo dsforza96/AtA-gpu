@@ -130,7 +130,7 @@ void ata(Float *A, Float *C, int lda, int ldc,
     a12 = pxa x nya
     a21 = nxa x pya
     a22 = pxa x pya
-   */
+  */
   GPU_AtB(a12, A, c21, lda, lda, ldc, YA, XA, XC, pxa, YA, pyc, 1.0, 0.0);        // (c21 c22) = (a12 a22)t * A
   GPU_AtB(a21, a21, C11, lda, lda, ldc, pya, nxa, nxc, nxa, pya, nyc, 1.0, 1.0);  // C11 = a21t * a21 + C11
 }
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
   }
   ct.stop();
 
-  double ataTime = ct.value() / iter;
+  float ataTime = ct.value() / iter;
   cudaMemcpy(h_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
   // printm(h_C, N, N);
 
@@ -204,22 +204,22 @@ int main(int argc, char **argv) {
   }
   ct.stop();
 
-  double classicTime = ct.value() / iter;
+  float classicTime = ct.value() / iter;
   cudaMemcpy(v_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
   // printm(v_C, N, N);
 
-  double speedup = classicTime / ataTime;
+  float speedup = classicTime / ataTime;
   printf ("M: %d; N: %d; AtA time: %.2f; classic time: %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
 
   if (check) {
-    double absErr = 0.0;
+    Float absErr = 0.0;
     for (int i = 0; i < N; i++) {
       for (int j = 0; j <= i; j++) {
         absErr += abs(h_C[i * N + j] - v_C[i * N + j]);
       }
     }
     int numel = N * (N + 1) / 2;
-    printf("CHECK: Mean absolute error: %lf\n", absErr / numel);
+    printf("CHECK: Mean absolute error: %g\n", absErr / numel);
   }
 
   free(h_A);

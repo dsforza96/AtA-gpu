@@ -55,11 +55,11 @@ extern cublasHandle_t handle;
 
 class CudaTimer
 {
-private:
+  private:
     cudaEvent_t _begEvent;
     cudaEvent_t _endEvent;
 
-public:
+  public:
     CudaTimer();
     ~CudaTimer();
     void start();
@@ -293,7 +293,7 @@ void strassen(Float *A, Float *B, Float *C,
     a12 = pxa x nya
     a21 = nxa x pya
     a22 = pxa x pya
-   */
+  */
   GPU_mul(a21, B11, c21, lda, ldb, ldc, nxa,  XB,  XC, pya, nyb, pyc, 1.0, 0.0);
   GPU_mul(A11, b12, c12, lda, ldb, ldc, nxa, pxb, pxc,  YA, nyb,  YC, 1.0, 0.0);
   GPU_mul(a12, b21, C11, lda, ldb, ldc, pxa,  XB,  XC,  YA, pyb,  YC, 1.0, 1.0);
