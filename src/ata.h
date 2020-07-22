@@ -10,7 +10,7 @@ typedef double Float;
 typedef float Float;
 #define cublasGeam cublasSgeam
 #define cublasGemm cublasSgemm
-#define CUTOFF 2048
+#define CUTOFF 1536
 
 #endif  // FLOAT_AS_DOUBLE
 
