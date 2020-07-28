@@ -135,16 +135,6 @@ void ata(Float *A, Float *C, int lda, int ldc,
   GPU_AtB(a21, a21, C11, lda, lda, ldc, pya, nxa, nxc, nxa, pya, nyc, 1.0, 1.0);  // C11 = a21t * a21 + C11
 }
 
-// void printm(Float* arr, int m, int n) {
-//   for (int i = 0; i < m; i++) {
-//    for (int j = 0; j < n; j++) {
-//       printf("%f ", arr[i * n + j]);
-//    }
-//    printf("\n");
-//   }
-//   printf("\n");
-// }
-
 
 int main(int argc, char **argv) {
   if(argc != 6) {
@@ -179,7 +169,6 @@ int main(int argc, char **argv) {
   cudaMalloc((void **)&d_A, memSizeA);
   cudaMalloc((void **)&d_C, memSizeC);
   cudaMemcpy(d_A, h_A, memSizeA, cudaMemcpyHostToDevice);
-  // printm(h_A, M, N);
 
   if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
     fprintf(stderr, "!!!! cuBLAS initialization error\n");
@@ -196,7 +185,6 @@ int main(int argc, char **argv) {
 
   float ataTime = ct.value() / iter;
   cudaMemcpy(h_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
-  // printm(h_C, N, N);
 
   ct.start();
   for (int i = 0; i < iter; i++) {
@@ -206,7 +194,6 @@ int main(int argc, char **argv) {
 
   float classicTime = ct.value() / iter;
   cudaMemcpy(v_C, d_C, memSizeC, cudaMemcpyDeviceToHost);
-  // printm(v_C, N, N);
 
   float speedup = classicTime / ataTime;
   printf ("M: %d; N: %d; AtA time: %.2f; classic time: %.2f; speedup: %.2f\n", M, N, ataTime, classicTime, speedup);
